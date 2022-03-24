@@ -5,34 +5,28 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 
-
 class SmsApiController extends Controller
 {
-    public function getMessages($number, $apiKey, $secretKey){
-        //Setting Header   
+    /**
+     * To get the messages sent by number
+     */
+    public function getMessages($number, $apiKey, $secretKey){   
         $method = 'GET';   
-        
         $params = json_encode([
             "destination" => $number
-            
         ], JSON_FORCE_OBJECT);
+        //Generating header for this number and method
         $header = SmsApiController::generateHeader( $apiKey, $secretKey, $method);
-        
+        //Sending request to get message
         $response_content = SmsApiController::sendRequest($method, $params, $header);
-        //$response_content = $response->getBody()->getContents();
-            
-        // if ($response->getStatus() == 200) {
-        //     echo $response->getBody();
-        // }
-        // else {
-        //     echo 'Unexpected HTTP status: ' . $response->getStatus();
-        //     //$response->getReasonPhrase();
-        // }
             
         return $response_content;
         
     }
 
+    /**
+     * To send the message to a number
+     */
     public function sendMessages($number, $message, $apiKey, $secretKey){
         $method = 'POST';
         //Setting Parameters to pass in the body
@@ -42,14 +36,16 @@ class SmsApiController extends Controller
         ], JSON_FORCE_OBJECT);
         //Generating header
         $header = SmsApiController::generateHeader( $apiKey, $secretKey, $method);
+        //Sending request to get message
         $response_content = SmsApiController::sendRequest($method, $params, $header);
         return $response_content;
         
     }
 
-    public static function generateHeader( $apiKey, $secretKey, $method){
-        // $apiKey = '246acd60ada9b008e0f3bf937232c103';
-        // $secretKey = 'ec97a08655792e9086f28495257a6bbf';
+    /**
+     * Generating header using MXT Rest API keys
+     */
+    private static function generateHeader( $apiKey, $secretKey, $method){
         $timestamp = time();
         $nonce = floor(random_int(1000000, 9999999));
         $string = array($timestamp, $nonce, $method, "/v2/sms", "api.smsglobal.com", 443, '');
@@ -61,17 +57,29 @@ class SmsApiController extends Controller
         return $header;
     }
     
-    public static function sendRequest($method, $params, $header){
+    /**
+     * Sending request to send sms
+     */
+    private static function sendRequest($method, $params, $header){
         $client = new Client();
-        $response = $client->request($method, 'https://api.smsglobal.com/v2/sms', [
-            'body' => $params,
-            'headers' => [
-                'Authorization' => $header,
-                'content-type' => 'application/json'
-            ]
-        ]);
+        try {
+            $response = $client->request($method, 'https://api.smsglobal.com/v2/sms', [
+                'body' => $params,
+                'headers' => [
+                    'Authorization' => $header,
+                    'content-type' => 'application/json'
+                ]
+            ]);
+            
+            $response_content = $response->getBody()->getContents();
+            if($response->getStatusCode()==200){
+                return $response_content;
+            }
+        } catch (\Throwable $th) {
+            //If issue in sending request
+            return "Something went wrong. Please try after sometime.";
+        }
         
-        $response_content = $response->getBody()->getContents();
-        return $response_content;
+        return;
     }
 }

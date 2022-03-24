@@ -17,6 +17,7 @@ use App\Http\Controllers\SmsApiController;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
 Route::get('/message/{number}/{apiKey}/{apiSecret}', 'SmsApiController@getMessages');
 
 Route::post('/message/{number}/{message}/{apiKey}/{apiSecret}', 'SmsApiController@sendMessages');
